@@ -1,0 +1,45 @@
+package {{package}};
+
+import java.util.Collections.*;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Automatically generated POJOs for ontology at {{uri}}.
+ * DO NOT EDIT! 
+ */
+public class {{Type}} {
+    {{#fields}}
+        {{#functional}}
+    private {{range}} {{name}};
+
+    public {{range}} get{{Name}}() {
+        return this.{{name}};
+    }
+
+    public void set{{Name}}({{range}} {{name}}) {
+        this.{{name}} = {{name}}
+    }
+        {{/functional}}
+        {{^functional}}
+    private final Set<{{range}}> {{name}} = new HashSet<{{range}}>();
+
+    public Set<{{range}}> get{{Name}}() {
+        return unmodifiableSet(this.{{name}});
+    }
+
+    public void set{{Name}}(Set<{{range}}> {{name}}) {
+        this.{{name}}.clear();
+        this.{{name}}.addAll({{name}});
+    }
+
+    public void add{{Name}}({{range}} {{name}}) {
+        this.{{name}}.add({{name}});
+    }
+
+    public boolean remove{{Name}}({{range}} {{name}}) {
+        return this.{{name}}.remove({{name}});
+    }
+        {{/functional}}
+    {{/fields}}
+}
