@@ -86,15 +86,15 @@ object JsonLDSchema {
 
       // Step 2. Check @base, @vocab, @language
       val base = elems.get("@base").map(elem => elem match {
-        case JsonString(s) => mkURI(namespaces2,s)
+        case s : String => mkURI(namespaces2,s)
         case _ => throw new JsonLDException("@base should be a string")
       })
       val vocab = elems.get("@vocab").map(elem => elem match {
-        case JsonString(s) => s
+        case s : String => s
         case _ => throw new JsonLDException("@vocab should be a string")
       })
       val language = elems.get("@language").map(elem => elem match {
-        case JsonString(s) => s
+        case s : String => s
         case _ => throw new JsonLDException("@language should be a string")
       })
 
@@ -109,15 +109,15 @@ object JsonLDSchema {
         if !k.startsWith("@")
       } yield {
         v match {
-          case JsonString(string) if string.startsWith("@") => {
+          case string : String if string.startsWith("@") => {
             k -> AliasMapping(string)
           }
-          case JsonString(string) => {
+          case string : String => {
             k -> TypedMapping(mkURI(namespaces, string), Right(false)) 
           }
-          case JsonObject(elems) => {
-            def elemStr(id : String) = JsonObject(elems).toObj(id) match {
-              case JsonString(s) => s
+          case elems : Map[String,Object] => {
+            def elemStr(id : String) = elems(id) match {
+              case s : String => s
               case _ => throw new JsonLDException("%s should be a string" format id)
             }
             val id = if(elems.contains("@id")) {
@@ -156,7 +156,7 @@ object JsonLDSchema {
               k -> TypedMapping(mkURI(namespaces, id), _type)
             }
           }
-          case _ => throw new JsonLDException()
+          case _ => throw new JsonLDException(v.toString())
         }
       }
 

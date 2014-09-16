@@ -1,5 +1,6 @@
 package jlss.codegen
 
+import java.io.File
 import jlss._
 import com.hp.hpl.jena.rdf.model._
 import com.hp.hpl.jena.vocabulary.{RDF, RDFS, OWL, XSD}
@@ -12,8 +13,46 @@ object CodeGen {
 
   sealed trait CodeGenType
 
+  private[codegen] def ucFirst(name : String) = name(0).toUpper + name.drop(1)
+
+  private[codegen] val reserved = Map[String, String](
+    "String" -> "String_"
+  )
+
+
   class CodeGenClass(val uri : URI) extends CodeGenType {
     var fields = List[CodeGenField]()
+    lazy val packageName = {
+      if(uri.getFragment() != null && uri.getFragment() != "") {
+        uri.getHost().split("\\.").filter(_ != "www").map(_.replaceAll("\\W","")).reverse.mkString(".") +
+        uri.getPath().drop(1).split("/").map(_.replaceAll("\\W","")).map("." + _).mkString("")
+      } else {
+        uri.getHost().split("\\.").filter(_ != "www").map(_.replaceAll("\\W","")).reverse.mkString(".") +
+        uri.getPath().drop(1).split("/").map(_.replaceAll("\\W","")).dropRight(1).map("." + _).mkString("")
+      }
+    }
+    lazy val name = {
+      val n = _name
+      reserved.getOrElse(n,n)
+    }
+    private def _name : String = ucFirst(uri.getFragment() match {
+        case null => uri.getPath() match {
+          case null => throw new RuntimeException("Cannot determine name for " + uri)
+          case path => {
+            val s = path.drop(path.lastIndexOf('/')+1)
+            if(s.matches("\\w+")) {
+              return s
+            } else {
+              throw new RuntimeException("Cannot determine name for " + uri)
+            }
+          }
+        }
+        case frag => if(frag.matches("\\w+")) {
+          return frag
+        } else {
+          throw new RuntimeException("Cannot determine name for " + uri)
+        }
+      })
   }
 
   class CodeGenValue(val _type : String) extends CodeGenType 
@@ -146,6 +185,50 @@ object CodeGen {
     val processedModel = processModel(schema, rdfModel)
 
     return buildClass(schema, processedModel, rootClass, clazzes)
+  }
+
+  def main(_args : Array[String]) {
+    var args = _args.toList
+    var i = 0
+    var srcDir : Option[String] = None
+    while(i < args.size) {
+      if(args(i) == "-p") {
+        srcDir = Some(args(i+1))
+        args = args.take(i) ::: args.drop(i+2)
+      } else {
+        i += 1
+      }
+    }
+    if(args.length != 3) {
+      System.err.println("Usage: codegen -p srcDir language context classURI")
+      System.exit(-1)
+    }
+    println("changed")
+    // 1. Load Json
+    val json = new jlss.services.JsonParser(new java.io.InputStreamReader(new java.net.URL(args(1)).openStream()))()
+
+    // 2. Read Context
+    val context = JsonLDSchema.fromJson(json)
+
+    // 3. Build Code Gen Classes
+    val codeGen = buildCodeGenModel(context, new URI(args(2)))
+
+    // 4. Find template
+    val template = new java.io.InputStreamReader(this.getClass().getResource("/mustache/%s.mustache" format args(0)).openStream())
+
+    // 5. Make directories 
+    val dir = new File((srcDir match {
+      case Some(s) => if(s.endsWith(System.getProperty("file.separator"))) {
+        s
+      } else {
+        s + System.getProperty("file.separator")
+      }
+      case None => ""
+    }) + codeGen.packageName.replaceAll("\\.",System.getProperty("file.separator")))
+    dir.mkdirs()
+
+    // 6. Write template
+    MustacheCodeGen.generate(template, args(0), codeGen, new File(dir, codeGen.name + "." + args(0)))
   }
 
 }

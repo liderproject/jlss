@@ -1,8 +1,11 @@
 package {{package}};
 
-import java.util.Collections.*;
+import static java.util.Collections.*;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import jlss.JsonException;
+import jlss.javajson.*;
 
 /**
  * Automatically generated POJOs for ontology at {{uri}}.
@@ -18,7 +21,7 @@ public class {{Type}} {
     }
 
     public void set{{Name}}({{range}} {{name}}) {
-        this.{{name}} = {{name}}
+        this.{{name}} = {{name}};
     }
         {{/functional}}
         {{^functional}}
@@ -42,4 +45,149 @@ public class {{Type}} {
     }
         {{/functional}}
     {{/fields}}
+
+    public JSON toJSON() {
+        return toJSON(DefaultJSONFactory.newInstance());
+    }
+
+    public JSONObject toJSON(JSONFactory factory) {
+        final JSONFactory.JSONObjectBuilder fields = factory.startObject();
+        
+        {{#fields}}
+            {{#functional}}
+                {{#object}}
+        fields.put("{{name}}", get{{Name}}() == null ? factory.mkNull() : get{{Name}}().toJSON());
+                {{/object}}
+                {{#string}}
+        fields.put("{{name}}", factory.mkString(get{{Name}}()));
+                {{/string}}
+                {{#int}}
+        fields.put("{{name}}", factory.mkInt(get{{Name}}()));
+                {{/int}}
+                {{#number}}
+        fields.put("{{name}}", factory.mkNumber(get{{Name}}));
+                {{/number}}
+                {{#bool}}
+        fields.put("{{name}}", factory.mkBool(get{{Name}}));
+                {{/bool}}
+            {{/functional}}
+            {{^functional}}
+        {
+            final JSONFactory.JSONArrayBuilder elements = factory.startArray();
+            for({{range}} elem : get{{Name}}()) {
+                {{#object}}
+                elements.add(elem == null ? factory.mkNull() : elem.toJSON());
+                {{/object}}
+                {{#string}}
+                elements.add(factory.mkString(elem));
+                {{/string}}
+                {{#int}}
+                elements.add(factory.mkInt(elem));
+                {{/int}}
+                {{#number}}
+                elements.add(factory.mkNumber(elem));
+                {{/number}}
+                {{#bool}}
+                elements.add(factory.mkBool(elem));
+                {{/bool}}
+            }
+            fields.put("{{name}}", elements.end());
+        }
+            {{/functional}}
+        {{/fields}}
+        
+        return fields.end();
+    }
+
+    public static {{Type}} fromJSON(JSONObject json) {
+        final {{Type}} object = new {{Type}}();
+
+        while(json.hasNext()) {
+            final JSONObject.JSONField field = json.next();
+            {{#fields}}
+            if(field.key.equals("{{name}}")) {
+                {{#functional}}
+                {{#object}}
+                if(field.value instanceof JSONNull) {
+                    object.set{{Name}}(null);
+                }                    
+                if(!(field.value instanceof JSONObject)) {
+                    throw new JsonException("{{name}} should be an object or null but was " + field.value);
+                }
+                object.set{{Name}}({{range}}.fromJSON((JSONObject)field.value));
+                {{/object}}
+                {{#string}}
+                if(!(field.value instanceof JSONString)) {
+                    throw new JsonException("{{name}} should be a string but was " + field.value);
+                }
+                object.set{{Name}}(((JSONString)field.value).value);
+                {{/string}}
+                {{#int}}
+                if(!(field.value instanceof JSONInt)) {
+                    throw new JsonException("{{name}} should be an integer but was " + field.value);
+                }
+                object.set{{Name}}(((JSONInt)field.value).value);
+                {{/int}}
+                {{#number}}
+                if(!(field.value instanceof JSONNumber)) {
+                    throw new JsonException("{{name}} should be a number but was " + field.value);
+                }
+                object.set{{Name}}(((JSONNumber)field.value).value);
+                {{/number}}
+                {{#bool}}
+                if(!(field.value instanceof JSONBoolean)) {
+                    throw new JsonException("{{name}} should be a boolean but was " + field.value);
+                }
+                object.set{{Name}}(((JSONBoolean)field.value).value);
+                {{/bool}}
+                {{/functional}}
+                {{^functional}}
+                if(!(field.value instanceof JSONArray)) {
+                    throw new JsonException("{{name}} should be an array but was " + field.value);
+                }
+                final JSONArray array = (JSONArray)field.value;
+                while(array.hasNext()) {
+                    final JSON value = array.next();
+
+                    {{#object}}
+                    if(value instanceof JSONNull) {
+                        object.add{{Name}}(null);
+                    }                    
+                    if(!(value instanceof JSONObject)) {
+                        throw new JsonException("{{name}} should be an object or null but was " + value);
+                    }
+                    object.add{{Name}}({{range}}.fromJSON((JSONObject)value));
+                    {{/object}}
+                    {{#string}}
+                    if(!(value instanceof JSONString)) {
+                        throw new JsonException("{{name}} should be a string but was " + value);
+                    }
+                    object.add{{Name}}(((JSONString)value).value());
+                    {{/string}}
+                    {{#int}}
+                    if(!(value instanceof JSONInt)) {
+                        throw new JsonException("{{name}} should be an integer but was " + value);
+                    }
+                    object.add{{Name}}(((JSONInt)value).value());
+                    {{/int}}
+                    {{#number}}
+                    if(!(value instanceof JSONNumber)) {
+                        throw new JsonException("{{name}} should be a number but was " + value);
+                    }
+                    object.add{{Name}}(((JSONNumber)value).value());
+                    {{/number}}
+                    {{#bool}}
+                    if(!(value instanceof JSONBoolean)) {
+                        throw new JsonException("{{name}} should be a boolean but was " + value);
+                    }
+                    object.add{{Name}}(((JSONBoolean)value).value());
+                    {{/bool}}
+                }
+                {{/functional}}
+            }
+            {{/fields}}
+        }
+
+        return object;
+    }   
 }

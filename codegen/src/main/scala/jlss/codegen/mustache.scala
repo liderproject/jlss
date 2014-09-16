@@ -2,6 +2,7 @@ package jlss.codegen
 
 import com.github.mustachejava._
 import java.io.File
+import java.io.Reader
 import java.net.URI
 import scala.collection.JavaConversions._
 
@@ -17,58 +18,31 @@ object MustacheCodeGen {
   }
 
   private val typeConversions = Map(
-    "java.mustache" -> TypeConversion(
-      "anyURI" -> "Object",
-      "any" -> "Object",
+    "java" -> TypeConversion(
+      "anyURI" -> "String",
+      "any" -> "String",
       "decimal" -> "double",
       "integer" -> "int",
-      "string" -> "String"
+      "string" -> "String",
+      "boolean" -> "boolean"
     ),
-    "scala.mustache" -> TypeConversion(
-      "anyURI" -> "Object",
-      "any" -> "Any",
+    "scala" -> TypeConversion(
+      "anyURI" -> "String",
+      "any" -> "String",
       "decimal" -> "Double",
       "integer" -> "Int",
-      "string" -> "String"
+      "string" -> "String",
+      "boolean" -> "Boolean"
     )
   )
-
-  private def uriToName(uri : URI) : String = uri.getFragment() match {
-    case null => uri.getPath() match {
-      case null => throw new RuntimeException("Cannot determine name for " + uri)
-      case path => {
-        val s = path.drop(path.lastIndexOf('/')+1)
-        if(s.matches("\\w+")) {
-          return s
-        } else {
-          throw new RuntimeException("Cannot determine name for " + uri)
-        }
-      }
-    }
-    case frag => if(frag.matches("\\w+")) {
-      return frag
-    } else {
-      throw new RuntimeException("Cannot determine name for " + uri)
-    }
-  }
-
-  private def uriToPackageName(uri : URI) : String = {
-    if(uri.getFragment() != null && uri.getFragment() != "") {
-      uri.getHost().split("\\.").filter(_ != "www").reverse.mkString(".") +
-      uri.getPath().drop(1).split("/").map("." + _).mkString("")
-    } else {
-      uri.getHost().split("\\.").filter(_ != "www").reverse.mkString(".") +
-      uri.getPath().drop(1).split("/").dropRight(1).map("." + _).mkString("")
-    }
-  }
-
-  private def ucFirst(name : String) = name(0).toUpper + name.drop(1)
-      
+  private val stringTypes = Set("string")
+  private val integerTypes = Set("integer")
+  private val numberTypes = Set("decimal")
+  private val boolTypes = Set("boolean")
 
   private def clazzToMap(clazz : CodeGenClass, types : TypeConversion) : java.util.Map[String, Any] = mapAsJavaMap(Map(
-    "type" -> uriToName(clazz.uri),
-    "Type" -> ucFirst(uriToName(clazz.uri)),
-    "package" -> uriToPackageName(clazz.uri),
+    "Type" -> clazz.name,
+    "package" -> clazz.packageName,
     "uri" -> clazz.uri,
     "fields" -> seqAsJavaList(for((CodeGenField(name, uri, range, functional),index) <- clazz.fields.zipWithIndex) yield {
       mapAsJavaMap(Map(
@@ -76,24 +50,49 @@ object MustacheCodeGen {
         "Name" -> ucFirst(name),
         "uri" -> uri,
         "range" -> (range match {
-          case c2 : CodeGenClass => types(ucFirst(uriToName(c2.uri)))
-          case v : CodeGenValue => types(ucFirst(v._type))
+          case c2 : CodeGenClass => types(c2.name)
+          case v : CodeGenValue => types(v._type)
           case CodeGenAnyURI => types("anyURI")
           case CodeGenAny => types("any")
         }),
         "functional" -> functional,
         "last" -> (name == clazz.fields.last.name),
-        "index" -> index
+        "index" -> index,
+        "object" -> range.isInstanceOf[CodeGenClass],
+        "string" -> (range match {
+          case v : CodeGenValue => 
+            stringTypes contains (v._type)
+          case CodeGenAnyURI => true
+          case CodeGenAny => true
+          case _ => false
+        }),
+        "int" -> (range match {
+          case v : CodeGenValue => integerTypes contains (v._type)
+          case _ => false
+        }),
+        "number" -> (range match {
+          case v : CodeGenValue => numberTypes contains (v._type)
+          case _ => false
+        }),
+        "bool" -> (range match {
+          case v : CodeGenValue => boolTypes contains (v._type)
+          case _ => false
+        })
       ))
     })
   ))
 
 
-  def generate(template : File, codeGen : CodeGenClass, target : File) = {
+  def generate(template : File, codeGen : CodeGenClass, target : File) {
+    generate(new java.io.FileReader(template), template.getName().dropRight(".mustache".size), codeGen, target)
+  }
+
+  def generate(template : Reader, templateName : String, codeGen : CodeGenClass, target : File) = {
     val factory = new DefaultMustacheFactory()
-    val mustache = factory.compile(new java.io.FileReader(template), "codegen")
+    val mustache = factory.compile(template, "codegen")
     val out = new java.io.FileWriter(target)
-    mustache.execute(out, clazzToMap(codeGen, typeConversions.getOrElse(template.getName(), TypeConversion())))
+    val map = clazzToMap(codeGen, typeConversions.getOrElse(templateName, TypeConversion()))
+    mustache.execute(out, map)
     out.flush
     out.close
   }

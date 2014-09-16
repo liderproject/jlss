@@ -12,14 +12,15 @@ class CodeGenTest extends FlatSpec with Matchers {
     outFile.deleteOnExit()
     val codeGenClass = new CodeGenClass(new URI("http://www.example.com/test"))
     codeGenClass.fields ::= CodeGenField("field1", new URI("http://www.example.com/test#field1"),
-      new CodeGenValue("String"), true)
+      new CodeGenValue("string"), true)
     codeGenClass.fields ::= CodeGenField("field2", new URI("http://www.example.com/test#field2"),
       CodeGenAnyURI)
     val out = MustacheCodeGen.generate(new File("codegen/src/main/resources/mustache/java.mustache"), 
       codeGenClass,
       outFile)
     val content = scala.io.Source.fromFile(outFile).getLines().mkString("\n")
-    content.contains("final Set<Object> field2") should be (true)
+    //println(content)
+    content.contains("final Set<String> field2") should be (true)
   }
 
   "CodeGen" should "generate valid scala" in {
@@ -27,15 +28,14 @@ class CodeGenTest extends FlatSpec with Matchers {
     outFile.deleteOnExit()
     val codeGenClass = new CodeGenClass(new URI("http://www.example.com/test"))
     codeGenClass.fields ::= CodeGenField("field1", new URI("http://www.example.com/test#field1"),
-      new CodeGenValue("String"), true)
+      new CodeGenValue("string"), true)
     codeGenClass.fields ::= CodeGenField("field2", new URI("http://www.example.com/test#field2"),
       CodeGenAnyURI)
     val out = MustacheCodeGen.generate(new File("codegen/src/main/resources/mustache/scala.mustache"), 
       codeGenClass,
       outFile)
     val content = scala.io.Source.fromFile(outFile).getLines().mkString("\n")
-    println(content)
-    content.contains("field2 : Set[Object]") should be (true)
+    content.contains("field2 : Set[String]") should be (true)
   }
 
 }

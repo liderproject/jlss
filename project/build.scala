@@ -1,5 +1,7 @@
 import sbt._
 import Keys._
+import sbtassembly.Plugin._
+import AssemblyKeys._
 
 object JLSSBuild extends Build {
   lazy val java = Project("java", file("java"))
@@ -12,7 +14,7 @@ object JLSSBuild extends Build {
     )
   ) dependsOn(java)
 
-  lazy val codegen = Project("codegen", file("codegen"), settings = Defaults.defaultSettings ++
+  lazy val codegen = Project("codegen", file("codegen"), settings = Defaults.defaultSettings ++ assemblySettings ++
     Seq(libraryDependencies ++=
       Seq(
         "org.apache.jena" % "jena-arq" % "2.12.0",
@@ -20,4 +22,6 @@ object JLSSBuild extends Build {
       )
     )
   ) dependsOn(core)
+
+  lazy val nif = Project("nif", file("nif")) dependsOn(java)
 }
