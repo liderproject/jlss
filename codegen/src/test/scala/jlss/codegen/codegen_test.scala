@@ -38,4 +38,27 @@ class CodeGenTest extends FlatSpec with Matchers {
     content.contains("field2 : Set[String]") should be (true)
   }
 
+  "CodeGen" should "work even for a class called String" in {
+    import jlss.JsonGen._
+    val contextJson = obj (
+      "anchorOf" -> "http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#anchorOf",
+      "subString" -> obj(
+        "@id" -> "http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#subString",
+        "@type" -> "@id"
+      )
+    )
+    val context = jlss.JsonLDSchema.fromJson(contextJson)
+    val codeGen = buildCodeGenModel(context, new URI("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#String"))
+    codeGen.fields.size should be (2)
+    for(field <- codeGen.fields) {
+      val CodeGenField(name, uri, range, functional) = field
+      if(name == "anchorOf") {
+        range should be (CodeGenAny)
+      } else if(name == "subString") {
+        range.asInstanceOf[CodeGenClass].name should be ("String_")
+      } else {
+        fail()
+      }
+    }
+  }
 }

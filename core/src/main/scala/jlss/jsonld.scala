@@ -15,22 +15,30 @@ class JsonLDSchema(val mappings : Map[String,JsonLDSchema.TermMapping],
 }
 
 object JsonLDSchema {
+  sealed trait MappingType
+
+  case class TypedDataMapping(uri : URI) extends MappingType
+
+  object UntypedDataMapping extends MappingType
+
+  object ObjectMapping extends MappingType
+
   sealed trait TermMapping {
     def reverse = false
-    def _type : Either[URI,Boolean] = Right(false)
+    def _type : MappingType = UntypedDataMapping
   }
 
-  case class TypedMapping(uri : URI, override val _type : Either[URI,Boolean], override val reverse : Boolean = false) extends TermMapping
+  case class TypedMapping(uri : URI, override val _type : MappingType, override val reverse : Boolean = false) extends TermMapping
 
   case class LangStringMapping(uri : URI, language : String) extends TermMapping
 
   case class LangContainerMapping(uri : URI) extends TermMapping
 
-  case class ListMapping(uri : URI, override val _type : Either[URI,Boolean]) extends TermMapping
+  case class ListMapping(uri : URI, override val _type : MappingType) extends TermMapping
 
   case class AliasMapping(alias : String) extends TermMapping
 
-  case class IndexMapping(uri : URI, override val _type : Either[URI,Boolean]) extends TermMapping
+  case class IndexMapping(uri : URI, override val _type : MappingType) extends TermMapping
 
   private def mkURI(namespaces : Map[String,String], string : String) : URI = {
     try {
@@ -113,7 +121,7 @@ object JsonLDSchema {
             k -> AliasMapping(string)
           }
           case string : String => {
-            k -> TypedMapping(mkURI(namespaces, string), Right(false)) 
+            k -> TypedMapping(mkURI(namespaces, string), UntypedDataMapping) 
           }
           case elems : Map[String,Object] => {
             def elemStr(id : String) = elems(id) match {
@@ -128,11 +136,11 @@ object JsonLDSchema {
  
             val _type = if(elems.contains("@type")) {
               elemStr("@type") match {
-                case "@id" => Right(true)
-                case t => Left(mkURI(namespaces, t))
+                case "@id" => ObjectMapping
+                case t => TypedDataMapping(mkURI(namespaces, t))
               }
             } else {
-              Right(false)
+              UntypedDataMapping
             }
 
             if(elems.contains("@language")) {
@@ -144,7 +152,7 @@ object JsonLDSchema {
                 case "@language" => k -> LangContainerMapping(mkURI(namespaces, id))
                 case "@list" => k -> ListMapping(mkURI(namespaces, id), _type)
                 case "@index" => k -> IndexMapping(mkURI(namespaces, id), _type)
-                case "@set" => k -> TypedMapping(mkURI(namespaces, id), Right(false))
+                case "@set" => k -> TypedMapping(mkURI(namespaces, id), UntypedDataMapping)
                 case container => throw new JsonLDException("Unexpected container value %s" format container)
               }
             } else if(elems.contains("@reverse")) {

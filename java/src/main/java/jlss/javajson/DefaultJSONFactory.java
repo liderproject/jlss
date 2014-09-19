@@ -1,5 +1,10 @@
 package jlss.javajson;
 
+import java.io.EOFException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -8,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import jlss.JsonException;
 
 /**
  * Default in-memory creation of JSON object
@@ -417,4 +423,195 @@ public class DefaultJSONFactory implements JSONFactory {
     public JSONArrayBuilder startArray() {
         return new JSONArrayBuilderImpl();
     }
+
+    
+/*    private class SimpleJSONReader {
+        private static final int BUF_SIZE = 4096;
+        private final char[] buf = new char[BUF_SIZE];
+        private int pos = 0;
+        private int read = 0;
+        private final Reader reader;
+
+        public SimpleJSONReader(Reader reader) {
+            this.reader = reader;
+        }
+
+        public void skipWhitespace() {
+            while(read >= 0) {
+                while(pos >= read && read >= 0) {
+                    pos = 0;
+                    read = reader.read(buf);
+                }
+                if(read < 0) {
+                    throw new EOFException();
+                }
+                if(buf[pos] == ' ' ||
+                    buf[pos] == '\t' ||
+                    buf[pos] == '\n' ||
+                    buf[pos] == '\r') {
+                    pos += 1;
+                } else {
+                    return;
+                }
+            }
+            throw new EOFException();
+        }
+        
+        public char peekChar() {
+            while(pos >= read && read >= 0) {
+                pos = 0;
+                read = reader.read(buf);
+            }
+            if(read < 0) {
+                throw new EOFException();
+            }
+            return buf[pos];
+        }
+
+        public char popChar() {
+            char c = peekChar();
+            pos++;
+            return c;
+        }
+
+        public String seekEndOfString() {
+            boolean escaped = true;
+            final StringBuilder sb = new StringBuilder();
+            while(read >= 0) {
+                if(pos >= read && read >= 0) {
+                    pos = 0;
+                    read = reader.read(buf);
+                }
+                if(read < 0) {
+                    throw new EOFException();
+                }
+                if(buf[pos] == '\\') {
+                    if(!escaped) {
+                        escaped = true;
+                    }
+                } else if(buf[pos] == '"' && !escaped) {
+                    pos++;
+                    return sb.toString();
+                }
+                escaped = false;
+                sb.append(buf[pos++]);
+            }
+            throw new EOFException();
+        }
+
+        public String seekDelimiter() {
+            final StringBuilder sb = new StringBuilder();
+            while(read >= 0) {
+                while(pos >= read && read >= 0) {
+                    pos = 0;
+                    read = reader.read(buf);
+                }
+                if(read < 0) {
+                    throw new EOFException();
+                }
+                if(buf[pos] == ',' ||
+                        buf[pos] == '}' ||
+                        buf[pos] == ']' ||
+                        buf[pos] == ' ' ||
+                        buf[pos] == '\t' ||
+                        buf[pos] == '\n' ||
+                        buf[pos] == '\r') {
+                    return sb.toString();
+                }
+                sb.append(buf[pos++]);
+            }
+            throw new EOFException();
+        }
+
+
+        public JSON read() {
+            skipWhitespace();
+            char c = popChar();
+            if(c == '{') {
+                return readObject();
+            } else if(c == '[') {
+                return readArray();
+            } else {
+                throw new JsonException("Expected '[' or '{'");
+            }
+        }
+
+        private JSON readObject() {
+            final JSONObjectBuilder builder = startObject();
+            while(true) {
+                skipWhitespace();
+                popChar();
+                if(popChar() != '"') {
+                    throw new JsonException("Expected field");
+                }
+                final String fieldName = seekEndOfString();
+                skipWhitespace();
+                if(popChar() != ':') {
+                    throw new JsonException("Expected field separator");
+                }
+                skipWhitespace();
+                final Json json = readAny();
+                builder.put(fieldName, json);
+                skipWhitespace();
+                char c = peekChar();
+                if(c == '}') {
+                    popChar();
+                    return build.end();
+                } else if(c != ',') {
+                    throw new JsonException("Expected end of field");
+                }
+                popChar();
+            }
+            return builder.end();
+        }
+
+        private JSON readArray() {
+            final JSONArrayBuilder builder = startArray();
+            while(true) {
+                skipWhitespace();
+                final Json json = readAny();
+                builder.add(json);
+                skipWhitespace();
+                char c = peekChar();
+                if(c == '}') {
+                    popChar();
+                    return build.end();
+                } else if(c != ',') {
+                    throw new JsonException("Expected end of field");
+                }
+                popChar();
+            }
+            return builder.end();
+        }
+
+        private JSON readAny() {
+            skipWhitespace();
+            char c = peekChar();
+            if(c == '{') {
+                popChar();
+                return readObject();
+            } else if(c == '[') {
+                popChar();
+                return readObject();
+            } else if(c == '"') {
+                popChar();
+                return mkString(seekEndOfString());
+            } else {
+                final String value = seekDelimiter();
+                if(value.equalsIgnoreCase("true")) {
+                    return mkBool(true);
+                } else if(value.equalsIgnoreCase("false")) {
+                    return mkBool(false);
+                } else if(value.equalsIgnoreCase("null")) {
+                    return mkNull();
+                } else if(value.matches("[+-]?\\d+")) {
+                    return mkInt(Integer.parseInt(value));
+                } else if(value.matches("[+-]?\\d*\\.\\d*([eE][+-]\\d+)?")) {
+                    return mkNumber(Double.parseDouble(value));
+                } else {
+                    throw new JsonException("Bad value " + value);
+                }
+            }
+        }
+    }*/
 }

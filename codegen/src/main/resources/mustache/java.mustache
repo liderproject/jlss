@@ -56,10 +56,14 @@ public class {{Type}} {
         {{#fields}}
             {{#functional}}
                 {{#object}}
-        fields.put("{{name}}", get{{Name}}() == null ? factory.mkNull() : get{{Name}}().toJSON());
+        if(get{{Name}}() != null) {
+            fields.put("{{name}}", get{{Name}}().toJSON());
+        }
                 {{/object}}
                 {{#string}}
-        fields.put("{{name}}", factory.mkString(get{{Name}}()));
+        if(get{{Name}}() != null) {
+            fields.put("{{name}}", factory.mkString(get{{Name}}()));
+        }
                 {{/string}}
                 {{#int}}
         fields.put("{{name}}", factory.mkInt(get{{Name}}()));
@@ -73,25 +77,27 @@ public class {{Type}} {
             {{/functional}}
             {{^functional}}
         {
-            final JSONFactory.JSONArrayBuilder elements = factory.startArray();
-            for({{range}} elem : get{{Name}}()) {
-                {{#object}}
-                elements.add(elem == null ? factory.mkNull() : elem.toJSON());
-                {{/object}}
-                {{#string}}
-                elements.add(factory.mkString(elem));
-                {{/string}}
-                {{#int}}
-                elements.add(factory.mkInt(elem));
-                {{/int}}
-                {{#number}}
-                elements.add(factory.mkNumber(elem));
-                {{/number}}
-                {{#bool}}
-                elements.add(factory.mkBool(elem));
-                {{/bool}}
+            if(!get{{Name}}().isEmpty()) {
+                final JSONFactory.JSONArrayBuilder elements = factory.startArray();
+                for({{range}} elem : get{{Name}}()) {
+                    {{#object}}
+                    elements.add(elem == null ? factory.mkNull() : elem.toJSON());
+                    {{/object}}
+                    {{#string}}
+                    elements.add(factory.mkString(elem));
+                    {{/string}}
+                    {{#int}}
+                    elements.add(factory.mkInt(elem));
+                    {{/int}}
+                    {{#number}}
+                    elements.add(factory.mkNumber(elem));
+                    {{/number}}
+                    {{#bool}}
+                    elements.add(factory.mkBool(elem));
+                    {{/bool}}
+                }
+                fields.put("{{name}}", elements.end());
             }
-            fields.put("{{name}}", elements.end());
         }
             {{/functional}}
         {{/fields}}

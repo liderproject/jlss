@@ -98,7 +98,15 @@ object CodeGen {
     return model
   }
 
-  private type ProcessedModel = Map[URI,(Option[URI],Option[URI], Boolean, Boolean, List[URI])]
+  private case class ProcessedModelElement(
+    domain : Option[URI],
+    range : Option[URI],
+    functional : Boolean,
+    inverseFunctional : Boolean,
+    objectProperty : Boolean,
+    superClasses : List[URI]
+  )
+  private type ProcessedModel = Map[URI,ProcessedModelElement]
 
   private def processModel(schema : JsonLDSchema, model : Model) 
     : ProcessedModel = {
@@ -109,6 +117,7 @@ object CodeGen {
       var domain : Option[URI] = None
       var functional = false
       var inverseFunctional = false
+      var objectProperty = false
       var superclasses : List[URI] = Nil
       for(stat <- stats) {
         if(stat.getPredicate() == RDFS.range) {
@@ -119,25 +128,27 @@ object CodeGen {
           functional = true
         } else if(stat.getPredicate() == RDF.`type` && stat.getObject() == OWL.InverseFunctionalProperty) {
           inverseFunctional = true
+        } else if(stat.getPredicate() == RDF.`type` && stat.getObject() == OWL.ObjectProperty) {
+          objectProperty = true
         } else if(stat.getPredicate() == RDFS.subClassOf) {
           superclasses ::= new URI(stat.getObject().toString())
         }
       }
-      uri -> (domain, range, functional, inverseFunctional, superclasses)
+      uri -> ProcessedModelElement(domain, range, functional, inverseFunctional, objectProperty, superclasses)
     }
   }
     
-  def type2type(_type : Either[URI,Boolean], range : Option[URI], 
+  def type2type(_type : MappingType, range : Option[URI], 
     schema : JsonLDSchema, model : ProcessedModel, 
     clazzes : collection.mutable.Map[URI, CodeGenClass]) : CodeGenType = _type match {
-      case Left(uri) => {
+      case TypedDataMapping(uri) => {
         if(uri.toString.startsWith(XSD.getURI())) {
           new CodeGenValue(uri.getFragment)
         } else {
           throw new RuntimeException("Unsupported datatype " + uri)
         }
       }
-      case Right(true) => 
+      case ObjectMapping => 
         range match {
           case Some(uri) => buildClass(schema, model, uri, clazzes)
           case None => range match {
@@ -145,8 +156,17 @@ object CodeGen {
             case None => CodeGenAnyURI
           }
       }
-      case Right(false) =>
-        CodeGenAny
+      case UntypedDataMapping =>
+        range match {
+          case Some(uri) =>
+            if(uri.toString.startsWith(XSD.getURI())) {
+              new CodeGenValue(uri.getFragment)
+            } else {
+              throw new RuntimeException("Unsupported datatype " + uri)
+            }
+          case None =>
+           CodeGenAny
+        }
   }
 
    def buildClass(schema : JsonLDSchema, rdfModel : ProcessedModel, clazz : URI, clazzes :
@@ -159,7 +179,10 @@ object CodeGen {
           for((name, mapping) <- schema.mappings) {
             mappingToURI(mapping) match {
               case Some(u) => rdfModel.get(u) match {
-                case Some((domain,range,functional,inverseFunctional,superClasses)) => {
+                case Some(ProcessedModelElement(domain,range,functional,inverseFunctional,objectProperty,superClasses)) => {
+                  if(objectProperty && mapping._type != ObjectMapping) {
+                    throw new JsonLDException("%s is an object property in the ontology but not the schema" format name)
+                  }
                   if(!mapping.reverse && domain != None && domain.get == clazz) {    
                     val r = type2type(mapping._type, range, schema, rdfModel, clazzes)
                     c.fields ::= new CodeGenField(name, u, r, functional)
@@ -203,7 +226,6 @@ object CodeGen {
       System.err.println("Usage: codegen -p srcDir language context classURI")
       System.exit(-1)
     }
-    println("changed")
     // 1. Load Json
     val json = new jlss.services.JsonParser(new java.io.InputStreamReader(new java.net.URL(args(1)).openStream()))()
 

@@ -23,5 +23,5 @@ object JLSSBuild extends Build {
     )
   ) dependsOn(core)
 
-  lazy val nif = Project("nif", file("nif")) dependsOn(java)
+  lazy val nif = Project("nif", file("nif"), settings = Defaults.defaultSettings ++ assemblySettings) dependsOn(core)
 }
