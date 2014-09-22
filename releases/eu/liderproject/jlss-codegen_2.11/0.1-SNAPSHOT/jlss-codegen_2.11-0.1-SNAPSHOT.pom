@@ -18,7 +18,7 @@
         </dependency>
         <dependency>
             <groupId>eu.liderproject</groupId>
-            <artifactId>core_2.11</artifactId>
+            <artifactId>jlss-core_2.11</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

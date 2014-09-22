@@ -2,11 +2,11 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
     <groupId>eu.liderproject</groupId>
-    <artifactId>java_2.11</artifactId>
+    <artifactId>jlss-core_2.11</artifactId>
     <packaging>jar</packaging>
-    <description>java</description>
+    <description>jlss.core</description>
     <version>0.1-SNAPSHOT</version>
-    <name>java</name>
+    <name>jlss.core</name>
     <organization>
         <name>eu.liderproject</name>
     </organization>
@@ -15,6 +15,11 @@
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
             <version>2.11.2</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.liderproject</groupId>
+            <artifactId>jlss-java_2.11</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
