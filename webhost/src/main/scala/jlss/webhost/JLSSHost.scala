@@ -2,7 +2,7 @@ package jlss.webhost
 
 import java.lang.reflect.{Modifier}
 import javax.servlet.http._
-import jlss.javajson.{JSON, JSONSerializer}
+import jlss.javajson.{JSONObject}
 import jlss.services.DefaultJSONSerializer
 
 abstract class JLSSHost extends HttpServlet {
@@ -13,7 +13,7 @@ abstract class JLSSHost extends HttpServlet {
       case "/" => defaultPage(resp)
       case "" => defaultPage(resp)
       case "/index.html" => defaultPage(resp)
-      case svc if services contains svc => handleService(req, resp, services(svc))
+      case svc if services contains (svc.drop(1)) => handleService(req, resp, services(svc.drop(1)))
       case _ => notFound(resp)
     }
   }
@@ -49,7 +49,7 @@ abstract class JLSSHost extends HttpServlet {
 
   def handleService[A,B](req : HttpServletRequest, resp : HttpServletResponse, svc : JLSSService[A,B]) {
     val serializer = new DefaultJSONSerializer()
-    val m1 = svc.inClass.getMethod("fromJSON", classOf[JSON])
+    val m1 = svc.inClass.getMethod("fromJSON", classOf[JSONObject])
     val in = m1.invoke(null, serializer.read(req.getReader()))
     val m2 = svc.outClass.getMethod("toJSON")
 
@@ -57,7 +57,7 @@ abstract class JLSSHost extends HttpServlet {
     resp.setStatus(HttpServletResponse.SC_OK)
     resp.setContentType("application/json+ld")
     val writer = resp.getWriter()
-    serializer.write(m2.invoke(out).asInstanceOf[JSON], writer)
+    serializer.write(m2.invoke(out).asInstanceOf[JSONObject], writer)
     writer.flush()
     writer.close()
   }
@@ -73,13 +73,13 @@ case class JLSSService[A,B](val foo : A => B, val inClass : Class[_], val outCla
     case c if c == classOf[String] => 
     case _ => 
       try {
-        val m = inClass.getMethod("fromJSON", classOf[JSON])
+        val m = inClass.getMethod("fromJSON", classOf[JSONObject])
         check(Modifier.isPublic(m.getModifiers()), "%s.fromJSON must be public" format inClass.getName())
         check(Modifier.isStatic(m.getModifiers()), "%s.fromJSON must be static" format inClass.getName())
         check(m.getReturnType() == inClass, "%s.fromJSON must return %s" format (inClass.getName(), inClass.getName()))
       } catch {
         case x : NoSuchMethodException => throw new JLSSServiceException(
-          "Class %s needs a method with the signature: public static %s fromJSON(JSON json)" format
+          "Class %s needs a method with the signature: public static %s fromJSON(JSONObject json)" format
             (inClass.getName(), inClass.getName()), x)
       }
   }
@@ -90,10 +90,11 @@ case class JLSSService[A,B](val foo : A => B, val inClass : Class[_], val outCla
         val m = inClass.getMethod("toJSON")
         check(Modifier.isPublic(m.getModifiers()), "%s.toJSON must be public" format inClass.getName())
         check(!Modifier.isStatic(m.getModifiers()), "%s.toJSON must not be static" format inClass.getName())
-        check(m.getReturnType() == classOf[JSON], "%s.toJSON must return %s" format (inClass.getName(), inClass.getName()))
+        check(m.getReturnType() == classOf[JSONObject], "%s.toJSON must return JSONObject but returns %s" format (inClass.getName(),
+          m.getReturnType().getName()))
       } catch {
         case x : NoSuchMethodException => throw new JLSSServiceException(
-          "Class %s needs a method with the signature: public JSON toJSON(%s object)" format
+          "Class %s needs a method with the signature: public JSONObject toJSON(%s object)" format
             (inClass.getName(), inClass.getName()), x)
       }
   }
