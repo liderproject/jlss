@@ -12,8 +12,7 @@ class TestServices extends FlatSpec with Matchers {
 
     source | sink
 
-    sw.toString should be
-    ("""{"@context":{"lines":{"@container":"@list","@id":"http://liderproject.github.io/jlss/line"}},"lines":["foo","bar","baz"]}""")
+    sw.toString should be ("""{"@context":{"lines":{"@container":"@list","@id":"http://liderproject.github.io/jlss/line"}},"lines":["foo","bar","baz"]}""")
   }
 
   "simple source-service-sink pipeline" should "function" in {
@@ -24,8 +23,7 @@ class TestServices extends FlatSpec with Matchers {
     
     source | FairlyGoodTokenizer | sink
 
-    sw.toString should be
-    ("""{"@context":{"lines":{"@container":"@list","@id":"http://liderproject.github.io/jlss/lineTokenized"},"tokens":{"@container":"@list","@id":"http://liderproject.github.io/jlss/token"}},"lines":[{"tokens":["foo"]},{"tokens":["bar"]},{"tokens":["baz"]}]}""") 
+    sw.toString should be ("""{"@context":{"lines":{"@container":"@list","@id":"http://liderproject.github.io/jlss/lineTokenized"},"tokens":{"@container":"@list","@id":"http://liderproject.github.io/jlss/token"}},"lines":[{"tokens":["foo"]},{"tokens":["bar"]},{"tokens":["baz"]}]}""") 
   }
 }
 

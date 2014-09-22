@@ -56,11 +56,9 @@ object JsonLDSchema {
       case x : URISyntaxException => {
         namespaces.get("::base::") match {
           case Some(prefix) => try {
-            try {
-              return new URI(prefix + string)
-            } catch {
-              case x2 : URISyntaxException =>
-            }
+            return new URI(prefix + string)
+          } catch {
+            case x2 : URISyntaxException =>
           }
           case None => 
         }
@@ -123,7 +121,8 @@ object JsonLDSchema {
           case string : String => {
             k -> TypedMapping(mkURI(namespaces, string), UntypedDataMapping) 
           }
-          case elems : Map[String,Object] => {
+          case _elems : Map[_,_] => {
+            val elems = _elems.asInstanceOf[Map[String,Object]]
             def elemStr(id : String) = elems(id) match {
               case s : String => s
               case _ => throw new JsonLDException("%s should be a string" format id)

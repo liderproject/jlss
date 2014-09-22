@@ -44,7 +44,7 @@ case class JsonObject(val values : Iterator[JsonField]) extends Json with JSONOb
     val jf = values.next()
     new JSONObject.JSONField(jf.key, jf.value)
   }
-  def toObject = scala.collection.JavaConversions.asJavaMap(toObj)
+  def toObject = scala.collection.JavaConversions.mapAsJavaMap(toObj)
 }
 
 case class JsonField(val key : String, val value : Json)

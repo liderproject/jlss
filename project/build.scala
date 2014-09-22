@@ -1,4 +1,4 @@
-import sbt._
+/*import sbt._
 import Keys._
 import sbtassembly.Plugin._
 import AssemblyKeys._
@@ -24,4 +24,6 @@ object JLSSBuild extends Build {
   ) dependsOn(core)
 
   lazy val nif = Project("nif", file("nif"), settings = Defaults.defaultSettings ++ assemblySettings) dependsOn(core)
-}
+
+  lazy val webhost = Project("webhost", file("webhost"), settings = Defaults.defaultSettings ++ com.earldouglas.xwp.WarPlugin.warSettings)
+}*/

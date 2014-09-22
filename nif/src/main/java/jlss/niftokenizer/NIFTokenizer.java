@@ -15,7 +15,7 @@ public class NIFTokenizer {
     return s2.split("\\p{Z}+");
   }
 
-  private String_ tokenize(String_ s) {
+  public String_ tokenize(String_ s) {
       final String[] tokens = tokenize(s.getAnchorOf().iterator().next());
       for(String t : tokens) {
           final String_ sub = new String_();
