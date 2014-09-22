@@ -1,0 +1,1 @@
+name := "jlss.core"
