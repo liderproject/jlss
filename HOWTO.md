@@ -34,8 +34,8 @@ Write tokenizer to `src/main/java/Tokenizer.java`
               s.addSubString(sub);
           }
           return s;
-      }
-   }
+       }
+    }
 
 Write servlet to `src/main/scala/ExampleServlet.scala`
 
@@ -81,9 +81,6 @@ Write `build.sbt`
       , "javax.servlet" % "javax.servlet-api" % "3.1.0" % "test"
       , "eu.liderproject" %% "jlss-webhost" % "0.1-SNAPSHOT"
     )
-
-   
-   
 
 Run:
 
