@@ -49,13 +49,16 @@ public class String_ {
         return this.anchorOf.remove(anchorOf);
     }
 
-    public JSON toJSON() {
-        return toJSON(DefaultJSONFactory.newInstance());
+    public JSONObject toJSON() {
+        return toJSON(DefaultJSONFactory.newInstance(), null);
     }
 
-    public JSONObject toJSON(JSONFactory factory) {
+    public JSONObject toJSON(JSONFactory factory, String contextURI) {
         final JSONFactory.JSONObjectBuilder fields = factory.startObject();
-        
+        if(contextURI != null) {
+            fields.put("@context", factory.mkString(contextURI));
+        }
+ 
         {
             if(!getSubString().isEmpty()) {
                 final JSONFactory.JSONArrayBuilder elements = factory.startArray();

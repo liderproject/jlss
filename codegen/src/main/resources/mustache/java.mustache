@@ -47,12 +47,18 @@ public class {{Type}} {
     {{/fields}}
 
     public JSONObject toJSON() {
-        return toJSON(DefaultJSONFactory.newInstance());
+        return toJSON(DefaultJSONFactory.newInstance(), null);
     }
 
-    public JSONObject toJSON(JSONFactory factory) {
+    public JSONObject toJSON(JSONFactory factory, String contextURI) {
         final JSONFactory.JSONObjectBuilder fields = factory.startObject();
-        
+        if(contextURI != null) {
+            fields.put("@context", factory.mkString(contextURI));
+            {{#declaredType}}
+            fields.put("@type", factory.mkString("{{declaredType}}"));
+            {{/declaredType}}
+        }
+ 
         {{#fields}}
             {{#functional}}
                 {{#object}}
