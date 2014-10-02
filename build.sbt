@@ -8,7 +8,9 @@ organization in ThisBuild := "eu.liderproject"
 
 scalaVersion in ThisBuild := "2.11.2"
 
-libraryDependencies in ThisBuild += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
+libraryDependencies in ThisBuild ++= Seq(
+  "org.scalatest" %% "scalatest" % "2.2.1" % "test"
+)
 
 compileOrder in ThisBuild := CompileOrder.JavaThenScala
 

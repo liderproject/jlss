@@ -1,12 +1,40 @@
 package jlss.webhost
 
+import java.io.{StringReader, StringWriter}
 import java.lang.reflect.{Modifier}
+import java.util.{Set => JSet, HashSet => JHashSet}
+import javax.servlet.ServletConfig
 import javax.servlet.http._
+import javax.websocket._
+import javax.websocket.server._
 import jlss.javajson.{JSONObject}
 import jlss.services.DefaultJSONSerializer
+import scala.collection.JavaConversions._
 
 abstract class JLSSHost extends HttpServlet {
   def services : Map[String, JLSSService[_,_]]
+
+  def getEndpointConfigs(set : JSet[Class[_ <: Endpoint]]) : JSet[ServerEndpointConfig] = {
+    new JHashSet[ServerEndpointConfig]() {
+      for((name,service) <- services) {
+        System.err.println("Adding " + name)
+        add(ServerEndpointConfig.Builder.create(classOf[JLSSWebsocketHost[_,_]], "/" + name).
+          configurator(new ServerEndpointConfig.Configurator() {
+            override def getEndpointInstance[T](clazz : Class[T]) = {
+              if(clazz == classOf[JLSSWebsocketHost[_,_]]) {
+                new JLSSWebsocketHost(service).asInstanceOf[T]
+              } else {
+                throw new InstantiationException()
+              }
+            }
+          }).build())
+      }
+    }
+  }
+
+  def getAnnotatedEndpointClasses(set : java.util.Set[Class[_]]) : JSet[Class[_]] = {
+    java.util.Collections.emptySet()
+  }
 
   override def service(req : HttpServletRequest, resp : HttpServletResponse) {
     req.getPathInfo() match {
@@ -103,6 +131,37 @@ case class JLSSService[A,B](val foo : A => B, val inClass : Class[_], val outCla
 object streamService {
   def apply[A,B](foo : A => B)(implicit m1 : Manifest[A], m2 : Manifest[B]) = 
     JLSSService(foo,m1.erasure,m2.erasure)
+}
+
+class JLSSWebsocketHost[A,B](service : JLSSService[A,B]) extends Endpoint {
+
+  override def onOpen(session : Session, config : EndpointConfig) {
+    session.addMessageHandler(new MessageHandler.Whole[String]() {
+      override def onMessage(msg : String) {
+        handleService(session, msg)
+      }
+    })
+  }
+
+  private def handleService(session : Session, msg : String) {
+    try {
+      val serializer = new DefaultJSONSerializer()
+      val m1 = service.inClass.getMethod("fromJSON", classOf[JSONObject])
+      val in = m1.invoke(null, serializer.read(new StringReader(msg)))
+      val m2 = service.outClass.getMethod("toJSON")
+
+      val out = service.foo(in.asInstanceOf[A])
+      val writer = new StringWriter()
+      serializer.write(m2.invoke(out).asInstanceOf[JSONObject], writer)
+      writer.flush()
+      writer.close()
+      session.getBasicRemote().sendText(writer.toString)
+    } catch {
+      case x : Exception =>
+        session.getBasicRemote().sendText("error: " + x.getMessage())
+    }
+  }
+
 }
 
 class JLSSServiceException(message : String = "", cause : Throwable = null) extends RuntimeException(message, cause)
